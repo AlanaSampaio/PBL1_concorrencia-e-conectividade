@@ -2,6 +2,20 @@
 import json
 # Importa o módulo requests para fazer requisições HTTP
 import requests
+# Importa o módulo subprocess para executar comandos shell externos
+import subprocess
+
+tag_to_produto = {
+    "E20000172211009418905449": {'nome': 'Arroz 1kg', 'preco': 8.0, 'quantidade': 0},
+    "E20000172211010218905459": {'nome': 'Feijão 1kg', 'preco': 12.0, 'quantidade': 0},
+    "E2000017221101321890548C": {'nome': 'Milho de pipoca', 'preco': 4.5, 'quantidade': 0},
+    "E2000017221101241890547C": {'nome': 'Repolho roxo', 'preco': 3.8, 'quantidade': 0},
+    "E2000017221100961890544A": {'nome': 'Batata doce', 'preco': 10.0, 'quantidade': 0},
+    "E20000172211010118905454": {'nome': 'Desinfetante', 'preco': 7.5, 'quantidade': 0},
+    "E20000172211011118905471": {'nome': 'Sabonete', 'preco': 2.0, 'quantidade': 0},
+    "E20000172211012518905484": {'nome': 'Papel higiênico', 'preco': 14.9, 'quantidade': 0},
+    "E20000172211011718905474": {'nome': 'Ração gato castrado 3kg', 'preco': 50.0, 'quantidade': 0}
+}
 
 # Função para verificar o status do caixa
 def verifica_status_caixa(id_caixa):
@@ -13,60 +27,61 @@ def verifica_status_caixa(id_caixa):
     else:
         print(f"Erro ao verificar o status do caixa {id_caixa}")
         return False
+    
+# Define a função para ler tags RFID
+def ler_tags():
+    # Executa o script Python que está no Raspberry Pi e captura sua saída.
+    # 'text=True' faz com que a saída seja capturada como uma string
+    completed_process = subprocess.run(["sshpass", "-p", "larsid", "ssh", "tec502@172.16.103.0", "python3 /caminho/para/o/script.py"], capture_output=True, text=True)
+    
+    # Verifica se o script foi executado com sucesso (código de retorno 0)
+    if completed_process.returncode == 0:
+        # Pega a saída padrão do script e remove espaços em branco do início e do fim
+        # Em seguida, divide a saída em linhas
+        linhas = completed_process.stdout.strip().split("\n")
+        
+        # Divide cada linha em seus componentes (tag, read_count, etc.)
+        # Isso é feito para cada linha na saída
+        tags = [linha.split() for linha in linhas]
+        
+        # Itera sobre cada tag lida
+        for tag in tags:
+            # Desempacota os valores em variáveis
+            tag_str, read_count, _, _ = tag
+            
+            # Verifica se a tag está em nosso dicionário de produtos
+            if tag_str in tag_to_produto:
+                # Atualiza a 'quantidade' do produto com base no 'read_count' da tag
+                tag_to_produto[tag_str]['quantidade'] = int(read_count)
+        
+        # Retorna uma lista de produtos com quantidade maior que zero
+        return [tag_to_produto[tag_str] for tag_str in tag_to_produto if tag_to_produto[tag_str]['quantidade'] > 0]
+    
+    else:
+        # Se o script não foi executado com sucesso, imprime uma mensagem de erro
+        print("Erro na execução do script do Raspberry Pi")
+        
+        # Retorna uma lista vazia pois a leitura falhou
+        return []
 
 # Define a função iniciar_compra
 def iniciar_compra(id_caixa):
-    # Inicializa uma lista vazia chamada produtos
-    produtos = []
+    produtos = ler_tags()
+    if not produtos:
+        print("Nenhuma tag de produto encontrada.")
+        return []
 
-    # Entra em um loop infinito
-    while True:
-        # Imprime uma mensagem no console
-        print("\nInforme os detalhes do produto ou digite 'finalizado' para pagar a compra.")
-
-        # Solicita o nome do produto ao usuário e armazena em uma variável
-        nome = input("Nome do produto: ")
-
-        # Verifica se o usuário digitou 'finalizado' (ignorando maiúsculas/minúsculas)
-        if nome.lower() == 'finalizado':
-            # Sai do loop
-            break
-
-        # Solicita o preço do produto ao usuário e converte para float
-        preco = float(input("Preço do produto: "))
-        # Solicita a quantidade do produto ao usuário e converte para int
-        quantidade = int(input("Quantidade: "))
-
-        # Cria um dicionário contendo as informações do produto
-        produto = {
-            'nome': nome,
-            'preco': preco,
-            'quantidade': quantidade
-        }
-
-        # Adiciona o dicionário do produto à lista de produtos
-        if verifica_status_caixa(id_caixa):
-            produtos.append(produto)
-        else:
-            return "Caixa bloqueado, tente novamente!"
-
-    # Inicializa uma variável para armazenar o total da compra
     total = 0
-    # Imprime uma mensagem no console
     print("\nItens no Carrinho:")
 
-    # Loop para iterar sobre cada produto na lista de produtos
     for produto in produtos:
-        # Imprime as informações de cada produto no console
         print(f"Nome: {produto['nome']}, Preço: {produto['preco']:.2f}, Quantidade: {produto['quantidade']}")
-        # Atualiza o total da compra
         total += produto['preco'] * produto['quantidade']
 
+    # Imprime uma mensagem mostrando o total da compra
+    print(f"\nTotal da Compra: {total:.2f}")
+    
     if verifica_status_caixa(id_caixa):
-
-        # Imprime uma mensagem mostrando o total da compra
-        print(f"\nTotal da Compra: {total:.2f}")
-
         # Solicita o valor pago pelo usuário e converte para float
         pago = float(input("Informe o valor pago: "))
 
@@ -97,7 +112,7 @@ def iniciar_compra(id_caixa):
             # Retorna a lista atual de produtos para tentar novamente
             return produtos
     else:
-        return "Caixa bloqueado, tente novamente!"
+        return "Caixa bloquado, tente novamente!"
 
 # Define a função caixa_disponivel
 def caixa_disponivel():
@@ -123,7 +138,6 @@ def caixa_disponivel():
                     # Retorna o ID do caixa escolhido
                     return escolha
                 else:
-                    # Imprime uma mensagem de erro no console
                    
                     # Imprime uma mensagem de erro no console
                     print("\nID de caixa inválido. Tente novamente!")
