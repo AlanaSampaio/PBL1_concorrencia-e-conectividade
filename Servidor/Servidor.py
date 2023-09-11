@@ -13,8 +13,11 @@ HTTP_CREATED = 201
 HTTP_NOT_FOUND = 404
 HTTP_METHOD_NOT_ALLOWED = 405
 
-# Define o endereço IP e a porta onde o servidor será executado
-HOST, PORT = '0.0.0.0', 3389
+# Define o endereço IP e a porta onde o servidor será executado no google cloud
+#HOST, PORT = '0.0.0.0', 3389
+
+#Define endereço IP e porta onde o servidor será executado quando executado no localhost
+HOST, PORT = '192.168.0.105', 28600
 
 # Declara a classe SimpleHTTPServer
 class SimpleHTTPServer:
@@ -23,16 +26,16 @@ class SimpleHTTPServer:
         # Neste exemplo, 'caixa' contém uma lista de dicionários com 'id' e 'status'
         self.data_store = {
             'caixa': [{'id': 123, 'status': True}],
-            'compras': []  # Lista vazia para armazenar informações sobre compras
+            'compras': [{'nome': 'Arroz', 'preco': 20.0, 'quantidade': 1}]  # Lista vazia para armazenar informações sobre compras
         }
 
     def handle_single_connection(self, conn, addr):
         # Esta função trata de uma única conexão de cliente
-        # 'conn' é o soquete conectado ao cliente
+        # 'conn' é o soquete conectado ao clientebody
         # 'addr' é o endereço do cliente
         
         # Recebe até 1024 bytes do cliente e decodifica para texto
-        data = conn.recv(1024).decode('utf-8')
+        data = conn.recv(1100).decode('utf-8', errors='ignore')
         
         # Se algum dado foi recebido
         if data:
@@ -88,28 +91,29 @@ class SimpleHTTPServer:
             return HTTP_NOT_FOUND, "Não encontrado"
     def handle_post_request(self, data, path):
         # Manipula requisições HTTP POST
-        # Pega o tamanho do conteúdo a partir do cabeçalho "Content-Length"
         content_length = int(re.search(r'Content-Length: (\d+)', data).group(1))
-        # Pega o corpo da requisição usando o valor de "Content-Length"
         body = data[-content_length:]
-        # Transforma o corpo da requisição em um objeto Python usando json.loads()
         item = json.loads(body)
 
-        # Se o caminho é "/caixa", adiciona o item ao data store de caixas
+        # Se o caminho é "/caixa"
         if path == '/caixa':
-            self.data_store['caixa'].append(item)
-            # Retorna HTTP 201 Created e uma mensagem indicando sucesso
-            return HTTP_CREATED, "Item adicionado ao caixa"
+            if isinstance(item, list):
+                self.data_store['caixa'].extend(item)
+            else:
+                self.data_store['caixa'].append(item)
+            return HTTP_CREATED, "Item(s) adicionado(s) ao caixa"
 
-        # Se o caminho é "/compras", adiciona o item ao data store de compras
+        # Se o caminho é "/compras"
         elif path == '/compras':
-            self.data_store['compras'].append(item)
-            # Retorna HTTP 201 Created e uma mensagem indicando sucesso
-            return HTTP_CREATED, "Item adicionado às compras"
+            if isinstance(item, list):
+                self.data_store['compras'].extend(item)
+            else:
+                self.data_store['compras'].append(item)
+            return HTTP_CREATED, "Item(s) adicionado(s) às compras"
 
-        # Se nenhum dos caminhos acima corresponder, retorna HTTP 404 Not Found
         else:
             return HTTP_NOT_FOUND, "Não encontrado"
+
 
     def handle_put_request(self, data, path):
         # Manipula requisições HTTP PUT

@@ -10,7 +10,7 @@ import os
 import sys
 
 # Define uma constante com o URL do servidor
-SERVER_URL = "http://34.16.181.77:3389"
+SERVER_URL = "http://34.125.107.117:3389"
 
 # Define a função get_caixas que obtém a lista de caixas do servidor
 def get_caixas():

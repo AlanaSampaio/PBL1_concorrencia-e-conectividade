@@ -1,26 +1,18 @@
 # Importa o módulo JSON para manipulação de dados em formato JSON
 import json
+import socket
 # Importa o módulo requests para fazer requisições HTTP
 import requests
 # Importa o módulo subprocess para executar comandos shell externos
 import subprocess
+import random
 
-tag_to_produto = {
-    "E20000172211009418905449": {'nome': 'Arroz 1kg', 'preco': 8.0, 'quantidade': 0},
-    "E20000172211010218905459": {'nome': 'Feijão 1kg', 'preco': 12.0, 'quantidade': 0},
-    "E2000017221101321890548C": {'nome': 'Milho de pipoca', 'preco': 4.5, 'quantidade': 0},
-    "E2000017221101241890547C": {'nome': 'Repolho roxo', 'preco': 3.8, 'quantidade': 0},
-    "E2000017221100961890544A": {'nome': 'Batata doce', 'preco': 10.0, 'quantidade': 0},
-    "E20000172211010118905454": {'nome': 'Desinfetante', 'preco': 7.5, 'quantidade': 0},
-    "E20000172211011118905471": {'nome': 'Sabonete', 'preco': 2.0, 'quantidade': 0},
-    "E20000172211012518905484": {'nome': 'Papel higiênico', 'preco': 14.9, 'quantidade': 0},
-    "E20000172211011718905474": {'nome': 'Ração gato castrado 3kg', 'preco': 50.0, 'quantidade': 0}
-}
+HOST, PORT = '34.125.107.117', 3389
 
 # Função para verificar o status do caixa
 def verifica_status_caixa(id_caixa):
     # Faz uma requisição GET para obter informações sobre um caixa específico
-    response = requests.get(f"http://34.16.181.77:3389/caixa/{id_caixa}")
+    response = requests.get(f"http://34.125.107.117:3389/caixa/{id_caixa}")
     if response.status_code == 200:
         caixa = response.json()
         return caixa.get("status", False)  
@@ -32,30 +24,41 @@ def verifica_status_caixa(id_caixa):
 def ler_tags():
     # Executa o script Python que está no Raspberry Pi e captura sua saída.
     # 'text=True' faz com que a saída seja capturada como uma string
-    completed_process = subprocess.run(["sshpass", "-p", "larsid", "ssh", "tec502@172.16.103.0", "python3 /caminho/para/o/script.py"], capture_output=True, text=True)
-    
+    completed_process = subprocess.run(["python3", "read.py"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
     # Verifica se o script foi executado com sucesso (código de retorno 0)
     if completed_process.returncode == 0:
         # Pega a saída padrão do script e remove espaços em branco do início e do fim
         # Em seguida, divide a saída em linhas
         linhas = completed_process.stdout.strip().split("\n")
         
-        # Divide cada linha em seus componentes (tag, read_count, etc.)
-        # Isso é feito para cada linha na saída
-        tags = [linha.split() for linha in linhas]
+        # Cria uma lista vazia para armazenar as tags processadas
+        tags_processadas = []
         
-        # Itera sobre cada tag lida
-        for tag in tags:
-            # Desempacota os valores em variáveis
-            tag_str, read_count, _, _ = tag
+        # Itera sobre as linhas da saída
+        for i, linha in enumerate(linhas):
+            # Divide cada linha em seus componentes (tag, read_count, horário)
+            valores = linha.split()
             
-            # Verifica se a tag está em nosso dicionário de produtos
-            if tag_str in tag_to_produto:
-                # Atualiza a 'quantidade' do produto com base no 'read_count' da tag
-                tag_to_produto[tag_str]['quantidade'] = int(read_count)
+            # Gera nomes genéricos para os produtos (Produto1, Produto2, ...)
+            nome_produto = f"Produto{i+1}"
+            
+            # Gera um preço aleatório entre 1 e 50
+            preco = random.uniform(1, 20)
+            
+            # Verifica se há pelo menos três valores na linha
+            if len(valores) >= 3:
+                tag_str = valores[0]
+                read_count = int(valores[1])
+                horario = " ".join(valores[2:])
+                
+                # Adiciona a tag processada à lista
+                tags_processadas.append([tag_str, read_count, nome_produto, preco, horario])
+            else:
+                print(f"A linha {i+1} não possui informações suficientes e será ignorada.")
         
-        # Retorna uma lista de produtos com quantidade maior que zero
-        return [tag_to_produto[tag_str] for tag_str in tag_to_produto if tag_to_produto[tag_str]['quantidade'] > 0]
+        # Retorna a lista de tags processadas
+        return tags_processadas
     
     else:
         # Se o script não foi executado com sucesso, imprime uma mensagem de erro
@@ -63,6 +66,7 @@ def ler_tags():
         
         # Retorna uma lista vazia pois a leitura falhou
         return []
+
 
 # Define a função iniciar_compra
 def iniciar_compra(id_caixa):
@@ -73,51 +77,90 @@ def iniciar_compra(id_caixa):
 
     total = 0
     print("\nItens no Carrinho:")
+    
+    dados_compra = []
 
     for produto in produtos:
-        print(f"Nome: {produto['nome']}, Preço: {produto['preco']:.2f}, Quantidade: {produto['quantidade']}")
-        total += produto['preco'] * produto['quantidade']
+        nome_produto = produto[2]
+        preco_produto = produto[3]
+        quantidade = produto[1]
+        
+        dados_compra.append({
+            'tag': produto[0],
+            'nome': nome_produto,
+            'preco': preco_produto,
+            'quantidade': quantidade
+        })
 
-    # Imprime uma mensagem mostrando o total da compra
+        print(f"Nome: {nome_produto}, Preço: {preco_produto:.2f}, Quantidade: {quantidade}")
+        total += preco_produto * quantidade
+
     print(f"\nTotal da Compra: {total:.2f}")
     
     if verifica_status_caixa(id_caixa):
-        # Solicita o valor pago pelo usuário e converte para float
         pago = float(input("Informe o valor pago: "))
+        troco = pago - total
 
-        # Verifica se o valor pago é maior ou igual ao total da compra
+        # Criando um objeto único para a compra
+        objeto_compra = {
+            'produtos': dados_compra,
+            'total': total,
+            'valor_pago': pago,
+            'troco': troco if troco >= 0 else 0
+        }
+        
+        print(objeto_compra)
+
         if pago >= total:
-            # Calcula o troco
-            troco = pago - total
-            # Imprime o troco no console
             print(f"\nTroco: {troco:.2f}")
 
-            # Faz uma requisição POST para adicionar os produtos à lista de compras no servidor
-            response = requests.post("http://34.16.181.77:3389/compras", json=produtos)
+        try:
+            # Converte a lista objeto_compra para string JSON
+            objeto_compra_json = json.dumps(objeto_compra)
 
-            # Verifica o código de status da resposta
-            if response.status_code == 201:
-                # Imprime uma mensagem de sucesso no console
-                print("\nCompra realizada com sucesso!")
-                # Retorna uma lista vazia para iniciar uma nova compra
-                return []
-            else:
-                # Imprime uma mensagem de erro no console
-                print("\nErro ao realizar compra.")
-                # Retorna a lista atual de produtos para tentar novamente
+            # Cria uma string HTTP POST request para enviar ao servidor
+            request = f"POST /compras HTTP/1.1\r\nHost: {HOST}\r\nContent-Type: application/json\r\nContent-Length: {len(objeto_compra_json)}\r\n\r\n{objeto_compra_json}"
+
+            try:
+                # Conecta ao servidor e envia a requisição
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    print("Conectando ao servidor...")
+                    s.connect((HOST, PORT))
+                    print("Conectado.")
+
+                    print("Enviando dados...")
+                    s.sendall(request.encode('utf-8'))
+                    print("Dados enviados.")
+
+                    # Recebe a resposta do servidor
+                    print("Recebendo resposta...")
+                    response = s.recv(1100).decode('utf-8')
+                    print("Recebido:", response)
+
+                # Desserializa a resposta JSON para um objeto Python
+                response_dict = json.loads(response)
+                print("Resposta JSON: ", response_dict)
+                
+                # Verifica se a requisição foi bem-sucedida (Este é um exemplo, ajuste de acordo com seu caso)
+                if response_dict.get('status_code') == 201:  
+                    print("\nCompra realizada com sucesso!")
+                    return []
+                else:
+                    print(f"\nErro ao realizar compra.")
+                    return produtos
+
+            except Exception as e:  # Captura qualquer exceção genérica
+                print(f"Ocorreu um erro: {e}")
                 return produtos
-        else:
-            # Imprime uma mensagem informando que o valor pago é insuficiente
-            print("\nValor insuficiente.")
-            # Retorna a lista atual de produtos para tentar novamente
+        except json.JSONDecodeError:  # Captura erros de decodificação JSON
+            print("Não foi possível decodificar a resposta JSON.")
             return produtos
-    else:
-        return "Caixa bloquado, tente novamente!"
+
 
 # Define a função caixa_disponivel
 def caixa_disponivel():
     # Faz uma requisição GET para obter informações sobre os caixas disponíveis
-    response = requests.get("http://34.16.181.77:3389/caixa")
+    response = requests.get("http://134.125.107.117:3389/caixa")
     # Verifica o código de status da resposta
     if response.status_code == 200:
         # Converte a resposta JSON em um objeto Python
@@ -154,8 +197,6 @@ def caixa_disponivel():
 def main():
     id_caixa = caixa_disponivel()
     print(f"\nCaixa selecionado: {id_caixa}")
-
-    compras = []
 
     while True:
         # Verifica se o caixa ainda está disponível
