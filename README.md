@@ -1,6 +1,25 @@
 <h1>TEC 502 - Supermercado inteligente</h1>
 
 
+
+<h3>Executando o Projeto</h3>
+Para executar o servidor, abra um terminal e mude para o diretório onde reside o seu Dockerfile. Em seguida, siga as etapas abaixo.
+
+Tenha o Docker instalado em sua máquina.
+
+Criar um Container utilizando o docker
+
+```$ docker build -t caixa . ```
+
+Executar em modo interativo
+
+```$ docker run -it caixa ```
+
+Esses comandos se aplicam aos módulos Caixas e Administrador.
+
+
+
+
 <h3>Fundamentação Teórica</h3>
 
 No contexto do crescente interesse pela automação de supermercados, é fundamental entender os conceitos e tecnologias que impulsionam esse projeto. Os principais pilares teóricos e tecnológicos são os seguintes:
@@ -14,6 +33,8 @@ No contexto do crescente interesse pela automação de supermercados, é fundame
 *  **API Rest e Protocolo HTTP:** A comunicação entre o caixa de supermercado inteligente e o servidor é realizada por meio de uma API Rest que utiliza o protocolo HTTP. Essa abordagem permite uma integração eficaz e segura entre os sistemas, facilitando uma experiência de compra rápida e sem complicações para os clientes.
 
 Essa fundamentação teórica é essencial para a compreensão dos princípios subjacentes ao projeto de caixa de supermercado inteligente e como esses conceitos e tecnologias se unem para criar uma solução eficaz que visa melhorar a eficiência das operações de supermercados e a satisfação do cliente.
+
+
 
 
 <h3>Metodologia</h3>
@@ -43,6 +64,7 @@ Essa metodologia detalhada permite que outros desenvolvedores compreendam como o
 
 
 
+
 <h3>Resultados e Discussões</h3>
 
 O projeto do caixa de supermercado inteligente baseado em RFID alcançou com sucesso seus objetivos, oferecendo uma solução eficaz para otimizar as operações de compra em supermercados. As principais conquistas incluem:
@@ -56,6 +78,7 @@ O projeto do caixa de supermercado inteligente baseado em RFID alcançou com suc
 *  **Sugestão de Gráfico:** Um gráfico de desempenho do tempo de processamento no caixa pode ser usado para demonstrar a eficiência do sistema. Isso destaca a diferença de tempo entre a transação em um caixa manual e um caixa automatizado, evidenciando o ganho de eficiência proporcionado pelo caixa automatizado.
 
 Em conclusão, o projeto do caixa de supermercado inteligente demonstrou a capacidade da automação com RFID em melhorar a eficiência das operações de compra em supermercados. Apesar dos desafios enfrentados, o sistema foi implementado com sucesso, oferecendo uma experiência de compra mais rápida e eficiente para os clientes. Como trabalhos futuros, a expansão do sistema para suportar mais tipos de produtos e a integração de métodos de pagamento eletrônico podem ser explorados para aprimorar ainda mais a solução.
+
 
 
 
