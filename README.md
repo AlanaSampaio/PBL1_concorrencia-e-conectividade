@@ -17,7 +17,7 @@ Executar em modo interativo
 
 Esses comandos se aplicam aos módulos Caixas e Administrador.
 
-
+***
 
 
 <h3>Fundamentação Teórica</h3>
@@ -34,7 +34,7 @@ No contexto do crescente interesse pela automação de supermercados, é fundame
 
 Essa fundamentação teórica é essencial para a compreensão dos princípios subjacentes ao projeto de caixa de supermercado inteligente e como esses conceitos e tecnologias se unem para criar uma solução eficaz que visa melhorar a eficiência das operações de supermercados e a satisfação do cliente.
 
-
+***
 
 
 <h3>Metodologia</h3>
@@ -62,7 +62,7 @@ A metodologia empregada no desenvolvimento do protótipo de caixa de supermercad
 
 Essa metodologia detalhada permite que outros desenvolvedores compreendam como o projeto foi concebido e implementado, tornando possível a replicação ou contribuição para o aprimoramento do protótipo de caixa de supermercado inteligente baseado em RFID.
 
-
+***
 
 
 <h3>Resultados e Discussões</h3>
@@ -79,7 +79,7 @@ O projeto do caixa de supermercado inteligente baseado em RFID alcançou com suc
 
 Em conclusão, o projeto do caixa de supermercado inteligente demonstrou a capacidade da automação com RFID em melhorar a eficiência das operações de compra em supermercados. Apesar dos desafios enfrentados, o sistema foi implementado com sucesso, oferecendo uma experiência de compra mais rápida e eficiente para os clientes. Como trabalhos futuros, a expansão do sistema para suportar mais tipos de produtos e a integração de métodos de pagamento eletrônico podem ser explorados para aprimorar ainda mais a solução.
 
-
+***
 
 
 <h3>Conclusão</h3>
